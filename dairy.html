@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Shared Diary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        #auth-section, #diary-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        input, textarea, button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .entry {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+        }
+        .entry:last-child {
+            border-bottom: none;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Online Shared Diary</h1>
+    <div id="auth-section">
+        <input type="password" id="password" placeholder="Enter diary password">
+        <button onclick="authenticate()">Access Diary</button>
+        <p id="error" class="error"></p>
+    </div>
+    <div id="diary-section" style="display: none;">
+        <textarea id="entry" placeholder="Write your diary entry..."></textarea>
+        <button onclick="saveEntry()">Save Entry</button>
+        <h2>Diary Entries</h2>
+        <div id="entries"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js"></script>
+
+    <script>
+        // Firebase configuration - REPLACE WITH YOUR OWN FIREBASE PROJECT CONFIG
+        const firebaseConfig = plugins {
+  id("com.android.application")
+
+  // Add the Google services Gradle plugin
+  id("com.google.gms.google-services")
+
+  ...
+}
+
+dependencies {
+  // Import the Firebase BoM
+  implementation(platform("com.google.firebase:firebase-bom:33.12.0"))
+
+
+  // TODO: Add the dependencies for Firebase products you want to use
+  // When using the BoM, don't specify versions in Firebase dependencies
+  implementation("com.google.firebase:firebase-analytics")
+
+
+  // Add the dependencies for any other desired Firebase products
+  // https://firebase.google.com/docs/android/setup#available-libraries
+}
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const diaryRef = database.ref("diaryEntries");
+
+        const correctPassword = "mySharedDiary2025"; // Shared password for access
+        const authSection = document.getElementById("auth-section");
+        const diarySection = document.getElementById("diary-section");
+        const errorElement = document.getElementById("error");
+
+        function authenticate() {
+            const password = document.getElementById("password").value;
+            if (password === correctPassword) {
+                authSection.style.display = "none";
+                diarySection.style.display = "block";
+                loadEntries();
+            } else {
+                errorElement.textContent = "Incorrect password. Please try again.";
+            }
+        }
+
+        function saveEntry() {
+            const entryText = document.getElementById("entry").value.trim();
+            if (entryText === "") {
+                alert("Please write something before saving.");
+                return;
+            }
+
+            const newEntry = {
+                text: entryText,
+                date: new Date().toLocaleString()
+            };
+
+            diaryRef.push(newEntry)
+                .then(() => {
+                    document.getElementById("entry").value = "";
+                })
+                .catch(error => {
+                    console.error("Error saving entry:", error);
+                    alert("Failed to save entry. Please try again.");
+                });
+        }
+
+        function loadEntries() {
+            diaryRef.on("value", (snapshot) => {
+                const entries = snapshot.val();
+                const entriesDiv = document.getElementById("entries");
+                entriesDiv.innerHTML = "";
+                if (entries) {
+                    Object.values(entries).forEach(entry => {
+                        const entryDiv = document.createElement("div");
+                        entryDiv.className = "entry";
+                        entryDiv.innerHTML = `<strong>${entry.date}</strong><p>${entry.text}</p>`;
+                        entriesDiv.appendChild(entryDiv);
+                    });
+                }
+            }, (error) => {
+                console.error("Error loading entries:", error);
+                alert("Failed to load entries. Please try again.");
+            });
+        }
+
+        // Handle Enter key for authentication
+        document.getElementById("password").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                authenticate();
+            }
+        });
+    </script>
+</body>
+</html>
